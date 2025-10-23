@@ -107,7 +107,7 @@ cd mikrotik/scripts/
 
 ### 3. Развертывание на все включенные роутеры
 ```bash
-./mikrotik_manager.sh deploy
+./mikrotik_manager.sh deploy-all
 ```
 
 ### 4. Проверка статуса
