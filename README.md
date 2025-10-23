@@ -50,6 +50,10 @@ pyyaml
 
 ### Автоматическая установка
 ```bash
+sudo apt install git unzip -y
+git clone https://github.com/1ZXXZ1/MT_N_M_S_A.git
+cd MT_N_M_S_A/
+unzip mikrotik.zip
 cd mikrotik/scripts/
 ./mikrotik_manager.sh install-deps
 ```
@@ -306,5 +310,6 @@ ansible-playbook debug/test_vars_loading.yml
 # Показать справку
 ./mikrotik_manager.sh help
 ```
+
 
 **Система управления MikroTik** · *Автоматизация сетевой инфраструктуры*
