@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # MikroTik Network Management System
 
 Система автоматизированного управления сетевыми устройствами MikroTik через Ansible.
@@ -53,6 +53,7 @@ pyyaml
 ```bash
 cd mikrotik/scripts/
 ./mikrotik_manager.sh install-deps
+
 ```
 
 ### Ручная установка
@@ -625,4 +626,4 @@ ansible-playbook debug/test_vars_loading.yml
 
 
 **Система управления MikroTik** · *Автоматизация сетевой инфраструктуры*
->>>>>>> 25d8432d3a50b1d5ea795dd9c8c0d0f1bf785b11
+
