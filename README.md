@@ -55,7 +55,7 @@ sudo apt update
 sudo apt install git -y
 git clone https://github.com/1ZXXZ1/MT_N_M_S_A.git
 cd MT_N_M_S_A/
-cd mikrotik/scripts/
+cd scripts/
 ./mikrotik_manager.sh install-deps
 
 ```
