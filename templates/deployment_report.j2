@@ -1,0 +1,19 @@
+MikroTik Deployment Report - ALL Enabled Routers
+Generated: {{ ansible_date_time.iso8601 }}
+
+Summary:
+========
+Total routers deployed: {{ enabled_routers | length }}
+
+Router Details:
+===============
+{% for router in enabled_routers %}
+{{ router }}:
+  Host: {{ mikrotik_vars[router].host }}
+  Description: {{ mikrotik_vars[router].description }}
+  Group: {{ mikrotik_vars[router].group }}
+  Status: DEPLOYED
+  Results: mikrotik_results_{{ router }}_{{ ansible_date_time.iso8601 }}.txt
+{% endfor %}
+
+Execution Time: {{ ansible_date_time.iso8601 }}

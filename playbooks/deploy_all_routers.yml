@@ -1,0 +1,77 @@
+---
+- name: Deploy configuration to ALL ENABLED MikroTik routers
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  
+  tasks:
+    - name: Load mikrotik variables
+      include_vars:
+        file: ../vars/mikrotik_vars.yml
+        name: mikrotik_vars
+
+    - name: Extract only ENABLED router names
+      set_fact:
+        enabled_routers: "{{ mikrotik_vars.keys() | select('match', '^router_') | select('regex_replace', '^.*$') | map('extract', mikrotik_vars) | selectattr('enabled') | list | map('extract', mikrotik_vars, mikrotik_vars.keys() | select('match', '^router_') | list) | flatten }}"
+
+    - name: Alternative method - get enabled routers
+      set_fact:
+        enabled_routers: "{{ [] }}"
+
+    - name: Check router_rt1
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt1'] }}"
+      when: mikrotik_vars.router_rt1.enabled | default(false)
+
+    - name: Check router_rt2
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt2'] }}"
+      when: mikrotik_vars.router_rt2.enabled | default(false)
+
+    - name: Check router_rt3
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt3'] }}"
+      when: mikrotik_vars.router_rt3.enabled | default(false)
+
+    - name: Check router_rt4
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt4'] }}"
+      when: mikrotik_vars.router_rt4.enabled | default(false)
+
+    - name: Debug show enabled routers
+      debug:
+        msg: "Found ENABLED routers: {{ enabled_routers }}"
+
+    - name: Show deployment summary
+      debug:
+        msg: |
+          🚀 DEPLOY-ALL: Развертывание на ВКЛЮЧЕННЫЕ роутеры
+          ===================================
+          Всего включенных роутеров: {{ enabled_routers | length }}
+          Список:
+          {% for router in enabled_routers %}
+          - {{ router }}: {{ mikrotik_vars[router].description }} ({{ mikrotik_vars[router].host }}) - 🟢 ВКЛЮЧЕН
+          {% endfor %}
+          {% if enabled_routers | length == 0 %}
+          ℹ️ Нет включенных роутеров для развертывания
+          {% endif %}
+
+    - name: Process each ENABLED router
+      include_tasks: process_router.yml
+      loop: "{{ enabled_routers }}"
+      loop_control:
+        loop_var: target_router
+        label: "{{ target_router }}"
+      vars:
+        force_enable: false  # Не форсируем, работаем только с включенными
+        router_config: "{{ mikrotik_vars[target_router] }}"
+        common_config: "{{ mikrotik_vars['mikrotik_common'] }}"
+        router_name: "{{ target_router }}"
+      when: enabled_routers | length > 0
+
+    - name: Generate deployment report
+      template:
+        src: ../templates/deployment_report.j2
+        dest: "../results/deployment_report_ALL_{{ ansible_date_time.iso8601 }}.txt"
+      delegate_to: localhost
+      when: enabled_routers | length > 0

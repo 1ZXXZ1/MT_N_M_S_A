@@ -1,0 +1,12 @@
+---
+- name: Debug variables
+  hosts: localhost
+  gather_facts: no
+  
+  vars_files:
+    - mikrotik_vars.yml
+  
+  tasks:
+    - name: Show all variables
+      debug:
+        var: vars

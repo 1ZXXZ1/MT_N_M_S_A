@@ -1,0 +1,24 @@
+---
+- name: Настройка всей сети MikroTik
+  hosts: localhost
+  gather_facts: yes
+  
+  vars:
+    setup_order: ["router_rt1", "router_rt2", "router_rt3"]
+  
+  tasks:
+    - name: Включение переменных
+      include_vars:
+        file: mikrotik_vars.yml
+        name: mikrotik_vars
+
+    - name: Показать порядок настройки
+      debug:
+        msg: "🔧 Настройка роутеров в порядке: {{ setup_order }}"
+
+    - name: Настройка роутеров по порядку
+      include_tasks: process_router.yml
+      loop: "{{ setup_order }}"
+      loop_control:
+        loop_var: router_name
+        label: "{{ router_name }}"

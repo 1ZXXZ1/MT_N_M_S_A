@@ -1,0 +1,32 @@
+---
+- name: Deploy configuration to ALL routers (enabled or not)
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+
+  vars_files:
+    - ../vars/mikrotik_vars.yml
+
+  tasks:
+    - name: Build full router list (all routers regardless of enabled flag)
+      set_fact:
+        all_routers: "{{ hostvars[inventory_hostname] | dict2items | selectattr('key', 'match', '^router_') | map(attribute='key') | list }}"
+
+    - name: Show router summary
+      debug:
+        msg: |
+          🚀 DEPLOY-ALL MODE
+          =================
+          Total routers: {{ all_routers | length }}
+          {% for r in all_routers %}
+          - {{ r }}: {{ hostvars[inventory_hostname][r].description }} ({{ hostvars[inventory_hostname][r].host }})
+          {% endfor %}
+
+    - name: Deploy configuration to every router (ignore enabled flag)
+      include_tasks: process_router.yml
+      loop: "{{ all_routers }}"
+      loop_control:
+        loop_var: target_router
+        label: "{{ target_router }}"
+      vars:
+        force_enable: true

@@ -1,0 +1,26 @@
+---
+- name: Test variables loading
+  hosts: localhost
+  gather_facts: yes
+  
+  tasks:
+    - name: Load mikrotik variables
+      include_vars:
+        file: ../vars/mikrotik_vars.yml
+        name: loaded_vars
+
+    - name: Show all loaded variables
+      debug:
+        var: loaded_vars
+
+    - name: Show router keys
+      debug:
+        msg: "Router keys: {{ loaded_vars.keys() | select('match', '^router_') | list }}"
+
+    - name: Show router details
+      debug:
+        msg: |
+          Router: {{ item }} 
+          Host: {{ loaded_vars[item].host }}
+          Enabled: {{ loaded_vars[item].enabled }}
+      loop: "{{ loaded_vars.keys() | select('match', '^router_') | list }}"

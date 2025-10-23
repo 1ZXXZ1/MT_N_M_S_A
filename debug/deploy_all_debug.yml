@@ -1,0 +1,20 @@
+---
+- name: Debug deploy-all
+  hosts: localhost
+  gather_facts: yes
+  
+  vars_files:
+    - ../vars/mikrotik_vars.yml
+
+  tasks:
+    - name: Show all variables
+      debug:
+        var: hostvars[inventory_hostname]
+
+    - name: Find all routers
+      debug:
+        msg: "All router keys: {{ hostvars[inventory_hostname].keys() | select('match', '^router_') | list }}"
+
+    - name: Count routers
+      debug:
+        msg: "Total routers found: {{ hostvars[inventory_hostname] | dict2items | selectattr('key', 'match', '^router_') | list | length }}"

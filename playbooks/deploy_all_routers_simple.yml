@@ -1,0 +1,68 @@
+- name: Deploy configuration to ALL ENABLED MikroTik routers
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  tasks:
+  - name: Load mikrotik variables
+    include_vars:
+      file: ../vars/mikrotik_vars.yml
+      name: mikrotik_vars
+  - name: Create list of enabled routers
+    set_fact:
+      enabled_routers: []
+  - name: Add router_rt1 if enabled
+    set_fact:
+      enabled_routers: '{{ enabled_routers + [''router_rt1''] }}'
+    when: mikrotik_vars.router_rt1.enabled | default(false) | bool
+  - name: Add router_rt2 if enabled
+    set_fact:
+      enabled_routers: '{{ enabled_routers + [''router_rt2''] }}'
+    when: mikrotik_vars.router_rt2.enabled | default(false) | bool
+  - name: Add router_rt3 if enabled
+    set_fact:
+      enabled_routers: '{{ enabled_routers + [''router_rt3''] }}'
+    when: mikrotik_vars.router_rt3.enabled | default(false) | bool
+  - name: Add router_rt4 if enabled
+    set_fact:
+      enabled_routers: '{{ enabled_routers + [''router_rt4''] }}'
+    when: mikrotik_vars.router_rt4.enabled | default(false) | bool
+  - name: Add router_rt5 if enabled
+    set_fact:
+      enabled_routers: '{{ enabled_routers + ["router_rt5"] }}'
+    when: mikrotik_vars.router_rt5.enabled | default(false) | bool
+  - name: Show deployment summary
+    debug:
+      msg: '🚀 DEPLOY-ALL: Развертывание на ВКЛЮЧЕННЫЕ роутеры
+
+        ===================================
+
+        Всего включенных роутеров: {{ enabled_routers | length }}
+
+        Список:
+
+        {% for router in enabled_routers %}
+
+        - {{ router }}: {{ mikrotik_vars[router].description }} ({{ mikrotik_vars[router].host
+        }}) - 🟢 ВКЛЮЧЕН
+
+        {% endfor %}
+
+        {% if enabled_routers | length == 0 %}
+
+        ℹ️ Нет включенных роутеров для развертывания
+
+        {% endif %}
+
+        '
+  - name: Process each ENABLED router
+    include_tasks: process_router.yml
+    loop: '{{ enabled_routers }}'
+    loop_control:
+      loop_var: target_router
+      label: '{{ target_router }}'
+    vars:
+      force_enable: false
+      router_config: '{{ mikrotik_vars[target_router] }}'
+      common_config: '{{ mikrotik_vars[''mikrotik_common''] }}'
+      router_name: '{{ target_router }}'
+    when: enabled_routers | length > 0

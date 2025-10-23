@@ -1,0 +1,71 @@
+---
+- name: Set file paths and status
+  set_fact:
+    config_file: "../configs/{{ router_config.config_file }}"
+    results_file: "../results/mikrotik_results_{{ target_router }}_{{ ansible_date_time.iso8601 }}.txt"
+    router_enabled: "{{ router_config.enabled | default(false) | bool }}"
+    router_name: "{{ target_router }}"  # Добавьте эту строку
+
+- name: Check router status
+  debug:
+    msg: "🔧 Processing {{ target_router }} - {{ 'ENABLED' if router_enabled else 'DISABLED' }} - {{ router_config.host }}"
+  
+- name: Skip disabled router (unless force enabled)
+  meta: end_play
+  when: not router_enabled and not force_enable
+
+- name: Validate configuration file
+  stat:
+    path: "{{ config_file }}"
+  register: config_stat
+
+- name: Read and validate commands
+  set_fact:
+    commands_list: "{{ lookup('file', config_file).split('\n') | select('match', '^/') | list }}"
+  when: config_stat.stat.exists
+
+- name: Show execution plan
+  debug:
+    msg: |
+      🚀 EXECUTION PLAN: {{ target_router }}
+      📍 Host: {{ router_config.host }}
+      👤 User: {{ router_config.user }}
+      📁 Config: {{ router_config.config_file }}
+      📝 Commands: {{ commands_list | length }}
+      💾 Results: {{ results_file }}
+      🚦 Status: {{ 'ENABLED' if router_enabled else 'DISABLED' }}
+
+- name: Execute commands on router
+  block:
+    - name: Run MikroTik commands
+      shell: |
+        sshpass -p '{{ router_config.password }}' ssh -o StrictHostKeyChecking=no \
+        {{ common_config.ssh_options }} \
+        {{ router_config.user }}@{{ router_config.host }} "{{ item }}" | tr -d '\r'
+      loop: "{{ commands_list }}"
+      register: command_results
+      loop_control:
+        label: "{{ item | truncate(50) }}"
+
+    - name: Generate detailed results file
+      template:
+        src: ../templates/output_template.j2
+        dest: "{{ results_file }}"
+      delegate_to: localhost
+      vars:
+        router_name: "{{ target_router }}"  # Явно передаем переменную в шаблон
+
+    - name: Show execution summary
+      debug:
+        msg: |
+          ✅ COMPLETED: {{ target_router }}
+          📊 Commands: {{ commands_list | length }}
+          ✅ Successful: {{ command_results.results | selectattr('failed', 'undefined') | list | length }}
+          ❌ Failed: {{ command_results.results | selectattr('failed', 'defined') | list | length }}
+          💾 Results: {{ results_file }}
+  when: config_stat.stat.exists
+
+- name: Handle missing configuration
+  fail:
+    msg: "Configuration file not found: {{ config_file }}"
+  when: not config_stat.stat.exists

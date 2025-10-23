@@ -1,0 +1,25 @@
+MikroTik Command Results - {{ ansible_date_time.iso8601 }}
+Router: {{ router_name }}
+Description: {{ router_config.description }}
+Host: {{ router_config.host }}
+User: {{ router_config.user }}
+Group: {{ router_config.group }}
+Enabled: {{ router_config.enabled }}
+Config File: {{ router_config.config_file }}
+
+{% for result in command_results.results %}
+=== Command {{ loop.index }}: {{ result.item }} ===
+{% if result.failed %}
+❌ FAILED: {{ result.msg }}
+{% else %}
+✅ SUCCESS:
+{{ result.stdout }}
+{% endif %}
+
+{% endfor %}
+
+=== EXECUTION SUMMARY ===
+Total commands: {{ command_results.results | length }}
+Successful: {{ command_results.results | selectattr('failed', 'undefined') | list | length }}
+Failed: {{ command_results.results | selectattr('failed', 'defined') | list | length }}
+Completion time: {{ ansible_date_time.iso8601 }}

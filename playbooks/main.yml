@@ -1,0 +1,67 @@
+---
+- name: MikroTik Network Management System
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  
+  vars_files:
+    - ../vars/mikrotik_vars.yml
+
+  vars:
+    operation_mode: "deploy"
+    force_enable: false
+
+  tasks:
+    - name: Validate operation mode
+      fail:
+        msg: "Invalid operation mode. Use: deploy, verify, or cleanup"
+      when: operation_mode not in ['deploy', 'verify', 'cleanup']
+
+    - name: Load router variables
+      set_fact:
+        all_routers: "{{ hostvars[inventory_hostname] | dict2items | selectattr('key', 'match', '^router_') | map(attribute='key') | list }}"
+        enabled_routers: "{{ hostvars[inventory_hostname] | dict2items | selectattr('key', 'match', '^router_') | selectattr('value.enabled', 'defined') | selectattr('value.enabled') | map(attribute='key') | list }}"
+
+    - name: Show network overview
+      debug:
+        msg: |
+          🌐 MIKROTIK NETWORK OVERVIEW
+          ============================
+          Operation: {{ operation_mode | upper }}
+          Total routers: {{ all_routers | length }}
+          Enabled routers: {{ enabled_routers | length }}
+          Force mode: {{ force_enable | default(false) }}
+
+    - name: Determine target routers
+      set_fact:
+        target_routers: "{{ all_routers if force_enable | default(false) else enabled_routers }}"
+
+    - name: Show target routers
+      debug:
+        msg: |
+          🎯 TARGET ROUTERS:
+          {% for router in target_routers %}
+          - {{ router }}: {{ hostvars[inventory_hostname][router].description }} ({{ hostvars[inventory_hostname][router].host }})
+          {% endfor %}
+
+    - name: Deploy configuration to target routers
+      include_tasks: process_router.yml
+      loop: "{{ target_routers }}"
+      loop_control:
+        loop_var: target_router
+        label: "{{ target_router }}"
+      when: 
+        - operation_mode == "deploy"
+        - target_routers | length > 0
+
+    - name: Generate deployment report
+      template:
+        src: ../templates/deployment_report.j2
+        dest: "../results/deployment_report_{{ ansible_date_time.iso8601 }}.txt"
+      delegate_to: localhost
+      when: operation_mode == "deploy" and target_routers | length > 0
+
+    - name: Show no routers message
+      debug:
+        msg: "ℹ️ No routers to process"
+      when: target_routers | length == 0

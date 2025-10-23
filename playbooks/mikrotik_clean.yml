@@ -1,0 +1,90 @@
+---
+- name: Execute commands on single MikroTik router
+  hosts: localhost
+  gather_facts: yes
+  
+  vars:
+    target_router: "router_rt4"
+    force_enable: false
+  
+  tasks:
+    - name: Load router variables
+      include_vars:
+        file: mikrotik_vars.yml
+
+    - name: Debug loaded variables
+      debug:
+        msg: "Available routers: {{ hostvars[inventory_hostname].keys() | list }}"
+      when: false
+
+    - name: Set router configuration
+      set_fact:
+        router_config: "{{ hostvars[inventory_hostname][target_router] }}"
+
+    - name: Set common configuration
+      set_fact:
+        common_config: "{{ hostvars[inventory_hostname]['mikrotik_common'] }}"
+
+    - name: Set file paths and status
+      set_fact:
+        config_file: "{{ router_config.config_file }}"
+        results_file: "mikrotik_results_{{ target_router }}.txt"
+        router_enabled: "{{ router_config.enabled | bool }}"
+        router_name: "{{ target_router }}"
+
+    - name: Check if config file exists
+      stat:
+        path: "{{ config_file }}"
+      register: config_stat
+
+    - name: Read commands from config file
+      set_fact:
+        commands_list: "{{ lookup('file', config_file).split('\n') | select('match', '^/') | list }}"
+      when: config_stat.stat.exists
+
+    - name: Display router information
+      debug:
+        msg: |
+          🚀 Processing router: {{ target_router }}
+          📍 Host: {{ router_config.host }}
+          👤 User: {{ router_config.user }}
+          🚦 Status: {{ 'ENABLED' if router_enabled else 'DISABLED' }}
+          📁 Config: {{ config_file }}
+          📝 Commands: {{ commands_list | length }}
+      when: config_stat.stat.exists
+
+    - name: Skip disabled router
+      debug:
+        msg: "⏭️ Skipping {{ target_router }} - router is disabled"
+      when: config_stat.stat.exists and not router_enabled and not force_enable
+
+    - name: Execute commands on router
+      block:
+        - name: Run MikroTik commands
+          shell: |
+            sshpass -p '{{ router_config.password }}' ssh -o StrictHostKeyChecking=no \
+            {{ common_config.ssh_options }} \
+            {{ router_config.user }}@{{ router_config.host }} "{{ item }}" | tr -d '\r'
+          loop: "{{ commands_list }}"
+          register: command_results
+          loop_control:
+            label: "{{ item }}"
+
+        - name: Generate results file
+          template:
+            src: output_template.j2
+            dest: "{{ results_file }}"
+          delegate_to: localhost
+
+        - name: Show completion message
+          debug:
+            msg: |
+              ✅ SUCCESS: {{ target_router }}
+              📊 Commands executed: {{ commands_list | length }}
+              💾 Results saved to: {{ results_file }}
+      when: config_stat.stat.exists and (router_enabled or force_enable)
+
+    - name: Handle missing config
+      debug:
+        msg: "❌ ERROR: Config file not found - {{ config_file }}"
+      when: not config_stat.stat.exists

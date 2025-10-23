@@ -1,0 +1,62 @@
+---
+- name: Execute commands on all enabled MikroTik routers
+  hosts: localhost
+  gather_facts: yes
+  
+  vars:
+    force_enable: false
+  
+  tasks:
+    - name: Load router variables
+      include_vars:
+        file: mikrotik_vars.yml
+
+    - name: Create list of enabled routers using simple method
+      set_fact:
+        enabled_routers: []
+    
+    - name: Check and add router_rt1
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt1'] }}"
+      when: 
+        - router_rt1 is defined
+        - router_rt1.enabled | default(false) | bool
+
+    - name: Check and add router_rt2
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt2'] }}"
+      when: 
+        - router_rt2 is defined
+        - router_rt2.enabled | default(false) | bool
+
+    - name: Check and add router_rt3
+      set_fact:
+        enabled_routers: "{{ enabled_routers + ['router_rt3'] }}"
+      when: 
+        - router_rt3 is defined
+        - router_rt3.enabled | default(false) | bool
+
+    - name: Debug enabled routers
+      debug:
+        var: enabled_routers
+
+    - name: Show router summary
+      debug:
+        msg: |
+          🟢 ВКЛЮЧЕННЫЕ РОУТЕРЫ ({{ enabled_routers | length }}):
+          {% for router in enabled_routers %}
+          - {{ router }}
+          {% endfor %}
+
+    - name: Show detailed router info
+      debug:
+        msg: "🔧 {{ item }}: {{ hostvars[inventory_hostname][item].description }} ({{ hostvars[inventory_hostname][item].host }})"
+      loop: "{{ enabled_routers }}"
+
+    - name: Process each enabled router
+      include_tasks: process_router.yml
+      loop: "{{ enabled_routers }}"
+      loop_control:
+        loop_var: target_router
+        label: "{{ target_router }}"
+      when: enabled_routers | length > 0

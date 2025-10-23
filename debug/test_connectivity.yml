@@ -1,0 +1,9 @@
+---
+- name: Test connectivity between routers
+  hosts: localhost
+  tasks:
+    - name: Ping test between all routers
+      debug:
+        msg: "Testing connectivity from {{ item.0 }} to {{ item.1 }}"
+      loop: "{{ enabled_routers | product(enabled_routers) | list }}"
+      when: item.0 != item.1

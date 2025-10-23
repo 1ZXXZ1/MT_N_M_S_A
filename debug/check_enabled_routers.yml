@@ -1,0 +1,25 @@
+---
+- name: Check which routers are enabled
+  hosts: localhost
+  gather_facts: yes
+  
+  tasks:
+    - name: Load variables
+      include_vars:
+        file: mikrotik_vars.yml
+
+    - name: Find all routers
+      set_fact:
+        all_routers: "{{ hostvars[inventory_hostname] }}"
+
+    - name: Show router status
+      debug:
+        msg: |
+          📊 СТАТУС РОУТЕРОВ:
+          {% for key, value in all_routers.items() %}
+          {% if key.startswith('router_') %}
+          - {{ key }}: {{ value.description }}
+            🚦 enabled: {{ value.enabled }}
+            📍 host: {{ value.host }}
+          {% endif %}
+          {% endfor %}
