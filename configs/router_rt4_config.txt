@@ -1,4 +1,0 @@
-/system resource print
-/interface print
-/ip firewall filter print
-/system identity print
