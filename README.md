@@ -56,6 +56,7 @@ sudo apt install git -y
 git clone https://github.com/1ZXXZ1/MT_N_M_S_A.git
 cd MT_N_M_S_A/
 cd scripts/
+chmod +x ./mikrotik_manager.sh
 ./mikrotik_manager.sh install-deps
 
 ```
