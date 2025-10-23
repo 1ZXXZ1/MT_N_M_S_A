@@ -1,35 +1,5 @@
 mikrotik_common:
   ssh_options: -o HostKeyAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group1-sha1
-router_rt1:
-  host: 192.168.104.119
-  user: admin
-  password: '12345'
-  description: Главный роутер
-  enabled: true
-  group: core
-  config_file: router_rt1_config.txt
-router_rt2:
-  host: 192.168.104.122
-  user: admin
-  password: '12345'
-  description: Дополнительный роутер 2
-  enabled: false
-  group: branch
-  config_file: router_rt2_config.txt
-router_rt3:
-  host: 192.168.104.123
-  user: admin
-  password: '12345'
-  description: Дополнительный роутер 3
-  enabled: false
-  group: branch
-  config_file: router_rt3_config.txt
-router_rt4:
-  host: 192.168.104.65
-  user: admin
-  password: '12345'
-  description: Дополнительный роутер 4
-  enabled: true
-  group: branch
-  config_file: router_rt4_config.txt
+
+
 
